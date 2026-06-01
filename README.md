@@ -1,92 +1,141 @@
-# 📊 Quant Trading Complete
+# 📊 Quant Complete
 
-完整量化交易技能包——一个仓库包含所有量化交易所需代码。
+完整量化交易技能包 — 选股 + 择时 + 自动化
 
-## 目录
+---
+
+## 项目结构
 
 ```
 quant-complete/
-├── skills/SKILL.md          ← 完整的 Hermes 量化技能（一个文件覆盖所有）
-├── src/quant_agent/         ← Python 量化核心库
-│   ├── data/fetcher.py      ← 数据获取（yfinance/CCXT）
-│   ├── analysis/             ← 技术指标 + 回测引擎
-│   │   ├── indicators.py
-│   │   └── backtest.py
-│   ├── strategies/           ← 示例策略
-│   │   └── examples.py
-│   ├── agent/                ← AI Agent 辅助分析
-│   │   └── quant_agent.py
-│   └── ml/                   ← ML 量化（Qlib/FreqTrade/PPO 最佳实践）
-│       ├── models.py
-│       ├── pipeline.py
-│       └── portfolio.py
-└── scripts/                  ← 日常使用脚本
-    ├── signal_check.py       ← 每日信号检查
-    └── quant_trader.py       ← 自动交易模块
+├── scripts/
+│   ├── deep_value_screener.py   每天扫 200+ 只股票, 找跌深+有价值的标的
+│   └── quant_trader.py          自动交易模块
+├── src/quant_agent/             Python 量化核心库
+│   ├── data/fetcher.py          数据获取
+│   ├── analysis/                技术指标 + 回测
+│   ├── strategies/              示例策略
+│   ├── agent/                   AI Agent 分析
+│   └── ml/                      ML 量化模块
+├── reports/                     每日分析报告 (按日期存放)
+│   ├── 2026-06-01/report.json
+│   ├── 2026-06-02/report.json
+│   └── tracking.csv             跟踪列表
+├── skills/SKILL.md              Hermes 量化技能 (一个文件覆盖全流程)
+└── README.md
 ```
 
-## 安装
+---
+
+## 每日选股策略
+
+```
+深度价值选股 = 选好公司 + 等好价格
+
+选好公司:
+  1. 从 200+ 只知名股票中筛选
+  2. 基本面评分: PE合理、PB低、负债率低
+  3. 市值 > 100 亿, 流动性好
+
+等好价格:
+  1. 从高点跌超 15% 才关注
+  2. RSI < 30 极度超卖时重点考虑
+  3. 分 3 批买入, 每跌 5% 加一次
+  4. 止损 -10%, 目标 +20%
+
+这不是价值投资, 也不是纯量化
+是: 价值选股 + 量化择时 = 完整的交易系统
+```
+
+### 量化的本质
+
+```
+价格 = 所有人信心和恐惧的总和
+K线 = 这种情绪的量化记录
+技术指标 = 情绪的数学摘要
+模型 = 在情绪数据中找重复模式
+```
+
+### 量化 vs 价值投资
+
+```
+             量化交易                   价值投资
+──────────────────────────────────────────────────────────
+信仰:     价格波动可预测             价格终归会回归价值
+依据:     历史数据 + 统计规律        公司基本面 + 护城河
+持仓:     几分钟到几个月             几年到几十年
+决策:     指标信号触发买卖           估值高估/低估时操作
+风险:     模型失效、过拟合、黑天鹅    看错公司、行业消亡
+收益来源:  赚波动钱                   赚企业成长钱
+本质:     投机                       投资
+```
+
+---
+
+## 快速开始
 
 ```bash
-pip install yfinance pandas numpy matplotlib scikit-learn ta ccxt
+# 安装依赖
+pip install yfinance pandas numpy
+
+# 每日选股
+python scripts/deep_value_screener.py
 ```
 
-## 使用
+### 输出示例
 
-### Hermes Agent 加载技能
+```
+深度价值选股 | 2026-06-02
+扫描 163 只, 找到 29 只, 耗时 93s
 
-把 `skills/SKILL.md` 放到 Hermes skills 目录后，对话中:
+==============================================================
+  UHS — Universal Health Services, Inc.
+  评分: 12/15
+  价格: $144.27  从高点跌了 -39.7%
+  RSI: 11.1  PE: 6.0  PB: 1.17
+  极度超卖！PE极低，估值有安全边际。负债率低，财务稳健。
+  简介: Universal Health Services provides hospital and healthcare services...
+```
+
+### 用 Hermes Agent 加载技能
+
 ```
 /skill quant-trading
 ```
 
-### Python 直接使用
+---
 
-```python
-from quant_agent.data.fetcher import StockDataFetcher
-from quant_agent.analysis.indicators import add_all_indicators
-from quant_agent.analysis.backtest import BacktestEngine
-from quant_agent.strategies.examples import sma_cross
-from quant_agent.ml.pipeline import MLPipeline
+## 回测验证
 
-# 全流程示例
-df = StockDataFetcher().fetch("BTC-USD", period="1y")
-df = add_all_indicators(df)
-result = BacktestEngine(df, sma_cross).run()
-print(f"收益: {result.total_return}%  夏普: {result.sharpe_ratio}")
+用历史数据回测过去 30 天:
+```
+7 只被选中 → 3 只涨 4 只跌 (准确率 43%)
+但赚的: MDB +49%, F +44%, MSFT +11%
+亏的: PYPL -9.5%, SNAP -6%, UBER -2.8%
+净收益: +12.2% / 30 天
 
-pipeline = MLPipeline()
-pipeline.run("BTC-USD", period="2y")
-pipeline.report()
+关键: 胜率不重要, 盈亏比才重要
 ```
 
-### 每日自动信号
+---
 
-```bash
-python scripts/signal_check.py
-```
+## 定时任务
 
-## 技能内容
+每天早上 9 点自动运行:
+- BTC 信号检查
+- 深度价值选股 (200+ 只)
 
-一个技能覆盖量化交易全流程:
-1. 数据获取 — yfinance/CCXT
-2. 技术指标 — SMA/EMA/RSI/MACD/布林带/KDJ/ATR
-3. 策略类型 — 趋势跟踪/均值回归/带过滤
-4. 回测 — 完整引擎 + 陷阱解析
-5. ML 量化 — 随机森林/GBDT + Walk-forward
-6. 风险管理 — 凯利/VaR/止损
-7. 投资组合 — 风险平价/最小方差
-8. 自动化 — 每日信号/定时任务
+报告保存到 `reports/YYYY-MM-DD/report.json`
+
+---
+
+## 知识笔记
+
+量化交易的基础知识笔记放在:
+[https://github.com/ruanchenbin3/quant-notes](https://github.com/ruanchenbin3/quant-notes)
+
+---
 
 ## License
 
 MIT
-
-## 每日选股
-
-```bash
-python scripts/deep_value_screener.py
-```
-
-每天扫 20 只核心股票，找出跌超 15% + 有基本面支撑的标的。
-报告保存在 `reports/YYYY-MM-DD/report.json`，跟踪列表在 `reports/tracking.csv`。
