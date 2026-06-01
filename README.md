@@ -81,3 +81,12 @@ python scripts/signal_check.py
 ## License
 
 MIT
+
+## 每日选股
+
+```bash
+python scripts/deep_value_screener.py
+```
+
+每天扫 20 只核心股票，找出跌超 15% + 有基本面支撑的标的。
+报告保存在 `reports/YYYY-MM-DD/report.json`，跟踪列表在 `reports/tracking.csv`。
