@@ -2,7 +2,7 @@
 深度价值选股 — 每日扫 200+ 只股票, 找跌深+有价值的标的
 输出包含: 业务简介、估值分析、成长性、盈利能力、分析师评级
 """
-import yfinance as yf
+import yfinance as yf, pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 import json
@@ -133,7 +133,6 @@ def analyze(t):
 
 
 def main():
-    import pandas as pd
     start = datetime.now(); results = []
     with ThreadPoolExecutor(max_workers=10) as exe:
         for f in as_completed({exe.submit(analyze, t): t for t in TICKERS if t}):
