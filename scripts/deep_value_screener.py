@@ -161,5 +161,36 @@ def main():
         json.dump({"date":today,"total":len(TICKERS),"found":len(results),
                    "elapsed":el,"results":results[:10]}, f, indent=2, ensure_ascii=False)
 
+
+    # Generate charts for top 3
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        for r in results[:3]:
+            ticker = r["ticker"]
+            df = yf.download(ticker, period="1y", progress=False)
+            if isinstance(df.columns, type(pd.Index([]))):
+                df.columns = df.columns.droplevel(1)
+            c = df["Close"]; p = float(c.iloc[-1]); hi = float(c.max()); lo = float(c.min())
+            d = c.diff(); g = d.clip(lower=0).rolling(14).mean(); l = -d.clip(upper=0).rolling(14).mean()
+            rsi = 100 - 100/(1+g/l.replace(0,1e-10))
+            fig, (a1, a2) = plt.subplots(2, 1, figsize=(10, 6), gridspec_kw={"height_ratios": [3, 1]})
+            a1.plot(df.index, c, "k-", lw=1.5, label=ticker)
+            a1.axhline(hi, color="r", ls=":", alpha=0.4, label=f"52wH ${hi:.0f}")
+            a1.axhline(lo, color="g", ls=":", alpha=0.4, label=f"52wL ${lo:.0f}")
+            a1.axhline(p, color="b", ls="--", alpha=0.6, label=f"Now ${p:.0f}")
+            a1.set_title(f"{ticker} | ${p:.0f} | Drop {(p/hi-1)*100:.1f}% | RSI {float(rsi.iloc[-1]):.0f}")
+            a1.legend(fontsize=8); a1.grid(alpha=0.3)
+            a2.plot(df.index, rsi, "purple", lw=1)
+            a2.axhline(70, color="r", ls=":", alpha=0.5); a2.axhline(30, color="g", ls=":", alpha=0.5)
+            a2.set_ylabel("RSI"); a2.set_ylim(0,100); a2.grid(alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(td / f"{ticker}_chart.png", dpi=130)
+            plt.close()
+            print(f"  Chart: {ticker}_chart.png")
+    except:
+        pass
+
 if __name__ == "__main__":
     main()
