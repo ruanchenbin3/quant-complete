@@ -192,5 +192,76 @@ def main():
     except:
         pass
 
+
+    # Generate README.md
+    try:
+        lines = []
+        lines.append(f"# Deep Value Screener — {today}")
+        lines.append("")
+        lines.append(f"Scanned {len(TICKERS)} stocks, found {len(results)} candidates meeting criteria.")
+        lines.append(f"*Analysis generated at {datetime.now().strftime('%H:%M:%S')}*")
+        lines.append("")
+        
+        for i, r in enumerate(results[:5]):
+            lines.append(f"## {i+1}. {r['ticker']} — {r['name']}  (Score: {r['score']}/15)")
+            lines.append("")
+            lines.append(f"| Metric | Value |")
+            lines.append(f"|--------|-------|")
+            lines.append(f"| Price | ${r['price']:.2f} |")
+            lines.append(f"| Drop from 52w High | {r['drop']:+.1f}% |")
+            lines.append(f"| RSI(14) | {r['rsi']:.1f} |")
+            lines.append(f"| PE | {r['pe']:.1f} |")
+            lines.append(f"| PB | {r['pb']:.2f} |")
+            lines.append(f"| Debt/Equity | {r['de']:.0f}% |")
+            lines.append(f"| Market Cap | ${r['mc_b']:.1f}B |")
+            lines.append(f"| Sector | {r['sector']} |")
+            lines.append("")
+            
+            # Technical analysis
+            lines.append("### Technical Analysis")
+            rsi = r['rsi']
+            if rsi < 20: lines.append("- RSI is extremely oversold (<20). Historically this zone has seen strong bounces.")
+            elif rsi < 30: lines.append("- RSI is oversold (<30). Watch for a reversal confirmation.")
+            elif rsi < 40: lines.append("- RSI is approaching oversold. Not quite there yet.")
+            else: lines.append("- RSI is neutral. Not a timing entry yet.")
+            
+            drop = r['drop']
+            if drop < -35: lines.append(f"- Price has dropped {abs(drop):.0f}% from 52-week high. Deep value territory.")
+            elif drop < -25: lines.append(f"- Significant pullback of {abs(drop):.0f}% from high. Worth watching.")
+            
+            # Fundamental analysis
+            lines.append("")
+            lines.append("### Fundamental Analysis")
+            pe = r['pe']
+            if pe and pe < 10: lines.append(f"- PE ratio of {pe:.1f} is very low, suggesting potential undervaluation.")
+            elif pe and pe < 20: lines.append(f"- PE ratio of {pe:.1f} is reasonable.")
+            elif pe and pe < 30: lines.append(f"- PE ratio of {pe:.1f} is slightly elevated.")
+            
+            pb = r['pb']
+            if pb and pb < 2: lines.append(f"- PB ratio of {pb:.2f} suggests price is close to book value.")
+            
+            de = r['de']
+            if de < 30: lines.append(f"- Low debt/equity ratio of {de:.0f}%. Financially conservative.")
+            elif de < 80: lines.append(f"- Moderate debt level at {de:.0f}%.")
+            else: lines.append(f"- Higher debt/equity at {de:.0f}%. Higher financial risk.")
+            
+            lines.append("")
+            if r.get('note'):
+                lines.append(f"> {r['note']}")
+                lines.append("")
+            
+            lines.append(f"![{r['ticker']} Chart]({r['ticker']}_chart.png)")
+            lines.append("")
+            lines.append("---")
+            lines.append("")
+        
+        lines.append("*Disclaimer: This is an automated screening report for educational purposes. Not investment advice.*")
+        
+        with open(td / "README.md", "w") as f:
+            f.write("\n".join(lines))
+        print("  README.md generated")
+    except Exception as e:
+        print(f"  README error: {e}")
+
 if __name__ == "__main__":
     main()
